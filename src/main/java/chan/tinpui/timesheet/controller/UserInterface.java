@@ -1,0 +1,277 @@
+package chan.tinpui.timesheet.controller;
+
+import chan.tinpui.timesheet.zoho.domain.Record;
+import chan.tinpui.timesheet.zoho.domain.Settings;
+import com.zoho.api.authenticator.OAuthToken;
+import javafx.application.Platform;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
+import javafx.geometry.HPos;
+import javafx.geometry.Insets;
+import javafx.geometry.Pos;
+import javafx.scene.Node;
+import javafx.scene.control.*;
+import javafx.scene.layout.ColumnConstraints;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.VBox;
+
+import java.time.DayOfWeek;
+import java.time.LocalDate;
+import java.time.format.TextStyle;
+import java.time.temporal.TemporalAdjusters;
+import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
+import static org.apache.commons.lang3.StringUtils.isEmpty;
+
+public class UserInterface extends VBox {
+
+    private static final double BUTTON_HEIGHT = 50.0;
+    private static final ExecutorService EXECUTOR_SERVICE = Executors.newSingleThreadExecutor();
+
+    private Controller controller;
+    private Node loadingScreen;
+
+    private TextField clientIdField;
+    private TextField clientSecretField;
+    private TextField grantTokenField;
+    private TextField refreshTokenField;
+    private TextField userEmailField;
+    private Label accessTokenLabel;
+    private ComboBox<Record> selectedJobDropdown;
+    private ComboBox<Record> holidayJobDropdown;
+    private Map<Integer, Spinner<Integer>> dayHourFields;
+    private FormGridPane leaveMapForm;
+    private Map<Record, ComboBox<Record>> leaveMapControls;
+    private TextArea infoDisplayArea;
+
+    public UserInterface(Node loadingScreen) {
+        this.clientIdField = new TextField();
+        this.clientSecretField = new PasswordField();
+        this.grantTokenField = new TextField();
+        this.refreshTokenField = new TextField();
+        this.userEmailField = new TextField();
+        this.accessTokenLabel = new Label("Access Token");
+        this.selectedJobDropdown = new ComboBox<>();
+        selectedJobDropdown.setMaxWidth(Double.MAX_VALUE);
+        selectedJobDropdown.setTooltip(new Tooltip("Select the main job that you are doing while at work"));
+        this.holidayJobDropdown = new ComboBox<>();
+        holidayJobDropdown.setMaxWidth(Double.MAX_VALUE);
+        holidayJobDropdown.setTooltip(new Tooltip("Select the job to use for adding time logs for public holidays"));
+        this.dayHourFields = new HashMap<>(10);
+        this.leaveMapForm = new FormGridPane();
+        this.leaveMapControls = new HashMap<>();
+        this.infoDisplayArea = new TextArea();
+        infoDisplayArea.setEditable(false);
+        this.setPadding(new Insets(5, 5, 5, 5));
+        this.setAlignment(Pos.CENTER);
+
+        this.loadingScreen = loadingScreen;
+        loadingScreen.managedProperty().bind(loadingScreen.visibleProperty());
+        loadingScreen.setVisible(true);
+        managedProperty().bind(visibleProperty());
+        setVisible(false);
+    }
+
+    public void setController(Controller controller) {
+        this.controller = controller;
+        this.infoDisplayArea.setText(controller.getDisplayLogs());
+        controller.addAccessTokenListener(accessToken -> accessTokenLabel.setText(accessToken));
+        controller.addLogListener(log -> infoDisplayArea.appendText("\n" + log));
+        updateFields();
+        populateSettings();
+        addComponents();
+        Platform.runLater(() -> {
+            VBox.setVgrow(this, Priority.ALWAYS);
+            this.loadingScreen.setVisible(false);
+            setVisible(true);
+        });
+    }
+
+    public void saveToken() {
+        if (controller != null) {
+            controller.saveToken(userEmailField.getText());
+        }
+    }
+
+    private void updateFields() {
+        if (controller.isTokenActive()) {
+            OAuthToken token = controller.getToken();
+            clientIdField.setText(token.getClientId());
+            clientSecretField.setText(token.getClientSecret());
+            grantTokenField.setText(token.getGrantToken());
+            refreshTokenField.setText(token.getRefreshToken());
+            userEmailField.setText(token.getUserMail());
+            accessTokenLabel.setText("Access Token: " + (isEmpty(token.getAccessToken()) ? "--" : token.getAccessToken()));
+        }
+    }
+
+    private void populateSettings() {
+        if (controller.isTokenActive()) {
+            OAuthToken token = controller.getToken();
+            Settings settings = controller.getSettings();
+            List<Record> jobs = controller.findJobs(token.getUserMail(), true);
+            List<Record> holidayJobOptions = new ArrayList<>();
+            holidayJobOptions.add(new Record(Record.IGNORE_RECORD_ID, "{ No selection: Omit time logs for public/bank holidays }"));
+            holidayJobOptions.addAll(jobs);
+            updateJobDropdown(selectedJobDropdown, jobs, settings.getDefaultJobId());
+            updateJobDropdown(holidayJobDropdown, holidayJobOptions, settings.getHolidayJobId());
+            populateLeaveMapForm(settings.getLeaveToJobMap(), controller.findLeaveTypes(token.getUserMail(), true), jobs);
+        }
+    }
+
+    private void populateLeaveMapForm(Map<String, String> leaveToJobMap, List<Record> leaveTypes, List<Record> jobs) {
+        leaveMapForm.removeAllFormFields();
+        leaveMapControls.clear();
+        List<Record> selectOptions = new ArrayList<>();
+        selectOptions.add(new Record(Record.IGNORE_RECORD_ID, "{ No selection: Omit time logs for this leave type }"));
+        selectOptions.addAll(jobs);
+        for (Record leaveType : leaveTypes) {
+            ComboBox<Record> jobDropdown = new ComboBox<>();
+            jobDropdown.setMaxWidth(Double.MAX_VALUE);
+            updateJobDropdown(jobDropdown, selectOptions, leaveToJobMap.getOrDefault(leaveType.getId(), Record.IGNORE_RECORD_ID));
+            leaveMapForm.addFormField(leaveType.getDescription(), jobDropdown);
+            leaveMapControls.put(leaveType, jobDropdown);
+        }
+    }
+
+    private void updateJobDropdown(ComboBox<Record> jobDropdown, List<Record> jobs, String defaultJobId) {
+        ObservableList<Record> observableList = FXCollections.observableArrayList(jobs);
+        jobDropdown.setItems(observableList);
+        if (!observableList.isEmpty()) {
+            int defaultSelectedIndex = 0;
+            if (defaultJobId != null) {
+                int index = 0;
+                for (Record job : observableList) {
+                    if (defaultJobId.equals(job.getId())) {
+                        defaultSelectedIndex = index;
+                        break;
+                    }
+                    index++;
+                }
+            }
+            jobDropdown.getSelectionModel().select(defaultSelectedIndex);
+        }
+    }
+
+    private void addComponents() {
+        FormGridPane connectionForm = new FormGridPane();
+        connectionForm.addFormField("Client ID", clientIdField);
+        connectionForm.addFormField("Client Secret", clientSecretField);
+        connectionForm.addFormField("Grant Token", grantTokenField);
+        connectionForm.addFormField("Refresh Token", refreshTokenField);
+        connectionForm.addFormField("Email", userEmailField);
+        addNode(connectionForm);
+
+        Button updateJobListButton = new Button("Update Job List");
+        Button createTimeLogsButton = new Button("Create Time Logs");
+
+        addButton(updateJobListButton, (actionEvent) -> {
+            updateJobListButton.setDisable(true);
+            createTimeLogsButton.setDisable(true);
+            EXECUTOR_SERVICE.execute(() -> {
+                controller.updateAccessToken(clientIdField.getText(), clientSecretField.getText(), grantTokenField.getText(), refreshTokenField.getText());
+                controller.updateUserEmail(userEmailField.getText());
+                updateFields();
+                populateSettings();
+                updateJobListButton.setDisable(false);
+                createTimeLogsButton.setDisable(false);
+            });
+        });
+
+        addNode(accessTokenLabel);
+
+        FormGridPane mainJobsForm = new FormGridPane();
+        mainJobsForm.addFormField("Job", selectedJobDropdown);
+        mainJobsForm.addFormField("Holiday", holidayJobDropdown);
+        addNode(mainJobsForm);
+
+        addDayHoursSetting(controller.getSettings());
+
+        addNode(leaveMapForm);
+
+        addButton(createTimeLogsButton, (actionEvent) -> {
+            updateJobListButton.setDisable(true);
+            createTimeLogsButton.setDisable(true);
+            EXECUTOR_SERVICE.execute(() -> {
+                Map<String, String> leaveToJobMap = new HashMap<>();
+                for (Map.Entry<Record, ComboBox<Record>> leaveJobEntry : leaveMapControls.entrySet()) {
+                    ComboBox<Record> leaveJobSelection = leaveJobEntry.getValue();
+                    if (leaveJobSelection.getValue() != null && !leaveJobSelection.getValue().getId().equals(Record.IGNORE_RECORD_ID)) {
+                        leaveToJobMap.put(leaveJobEntry.getKey().getId(), leaveJobSelection.getValue().getId());
+                    }
+                }
+                controller.saveSettings(
+                        selectedJobDropdown.getValue() == null ? "" : selectedJobDropdown.getValue().getId(),
+                        holidayJobDropdown.getValue() == null ? "" : holidayJobDropdown.getValue().getId(),
+                        leaveToJobMap,
+                        dayHourFields.get(1).getValue(),
+                        dayHourFields.get(2).getValue(),
+                        dayHourFields.get(3).getValue(),
+                        dayHourFields.get(4).getValue(),
+                        dayHourFields.get(5).getValue(),
+                        dayHourFields.get(6).getValue(),
+                        dayHourFields.get(7).getValue());
+                controller.addTimeLogs(userEmailField.getText(), LocalDate.now().with(TemporalAdjusters.firstDayOfMonth()), LocalDate.now().with(TemporalAdjusters.lastDayOfMonth()));
+                updateJobListButton.setDisable(false);
+                createTimeLogsButton.setDisable(false);
+            });
+        });
+
+        addSeparator();
+
+        addDisplayArea("Log", infoDisplayArea);
+    }
+
+    private void addButton(Button button, EventHandler<ActionEvent> eventHandler) {
+        button.setOnAction(eventHandler);
+        button.setPrefHeight(BUTTON_HEIGHT);
+        button.setMinWidth(300);
+        addNode(button);
+    }
+
+    private void addDayHoursSetting(Settings settings) {
+        GridPane dayHoursPane = new GridPane();
+        dayHoursPane.setHgap(2);
+        dayHoursPane.setAlignment(Pos.CENTER);
+        ColumnConstraints column1 = new ColumnConstraints();
+        column1.setMinWidth(40);
+        dayHoursPane.getColumnConstraints().add(column1);
+        dayHoursPane.add(new Label(), 0, 0);
+        ColumnConstraints dayConstraints = new ColumnConstraints();
+        dayConstraints.setHalignment(HPos.CENTER);
+        dayConstraints.setMinWidth(52);
+        dayConstraints.setMaxWidth(100);
+        for (int dayOfWeek = 1; dayOfWeek <= 7; dayOfWeek++) {
+            dayHoursPane.getColumnConstraints().add(dayConstraints);
+            dayHoursPane.add(new Label(DayOfWeek.of(dayOfWeek).getDisplayName(TextStyle.SHORT, Locale.ENGLISH)), dayOfWeek, 0);
+        }
+        dayHoursPane.add(new Label("Hours"), 0, 1);
+        for (int dayOfWeek = 1; dayOfWeek <= 7; dayOfWeek++) {
+            Spinner<Integer> spinner = new Spinner(0, 16, settings.getHoursForDay(DayOfWeek.of(dayOfWeek)), 1);
+            dayHoursPane.add(spinner, dayOfWeek, 1);
+            dayHourFields.put(dayOfWeek, spinner);
+        }
+        addNode(dayHoursPane);
+    }
+
+    private void addSeparator() {
+        Separator separator = new Separator();
+        separator.setPadding(new Insets(5, 0, 0, 0));
+        addNode(separator);
+    }
+
+    private void addDisplayArea(String label, TextArea textArea) {
+        VBox.setVgrow(textArea, Priority.ALWAYS);
+        addNode(new Label(label));
+        addNode(textArea);
+    }
+
+    private void addNode(Node node) {
+        Platform.runLater(() -> this.getChildren().add(node));
+    }
+}
