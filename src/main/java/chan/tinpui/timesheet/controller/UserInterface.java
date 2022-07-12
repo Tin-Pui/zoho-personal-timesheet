@@ -31,8 +31,8 @@ import static org.apache.commons.lang3.StringUtils.isEmpty;
 public class UserInterface extends VBox {
 
     private static final double BUTTON_HEIGHT = 50.0;
-    private static final ExecutorService EXECUTOR_SERVICE = Executors.newSingleThreadExecutor();
 
+    private ExecutorService executorService = Executors.newSingleThreadExecutor();
     private Controller controller;
     private Node loadingScreen;
 
@@ -80,8 +80,8 @@ public class UserInterface extends VBox {
     public void setController(Controller controller) {
         this.controller = controller;
         this.infoDisplayArea.setText(controller.getDisplayLogs());
-        controller.addAccessTokenListener(accessToken -> accessTokenLabel.setText(accessToken));
-        controller.addLogListener(log -> infoDisplayArea.appendText("\n" + log));
+        controller.addAccessTokenListener(accessToken -> Platform.runLater(() -> accessTokenLabel.setText(accessToken)));
+        controller.addLogListener(log -> Platform.runLater(() -> infoDisplayArea.appendText("\n" + log)));
         updateFields();
         populateSettings();
         addComponents();
@@ -92,21 +92,24 @@ public class UserInterface extends VBox {
         });
     }
 
-    public void saveToken() {
+    public void close() {
         if (controller != null) {
             controller.saveToken(userEmailField.getText());
         }
+        executorService.shutdown();
     }
 
     private void updateFields() {
         if (controller.isTokenActive()) {
             OAuthToken token = controller.getToken();
-            clientIdField.setText(token.getClientId());
-            clientSecretField.setText(token.getClientSecret());
-            grantTokenField.setText(token.getGrantToken());
-            refreshTokenField.setText(token.getRefreshToken());
-            userEmailField.setText(token.getUserMail());
-            accessTokenLabel.setText("Access Token: " + (isEmpty(token.getAccessToken()) ? "--" : token.getAccessToken()));
+            Platform.runLater(() -> {
+                clientIdField.setText(token.getClientId());
+                clientSecretField.setText(token.getClientSecret());
+                grantTokenField.setText(token.getGrantToken());
+                refreshTokenField.setText(token.getRefreshToken());
+                userEmailField.setText(token.getUserMail());
+                accessTokenLabel.setText("Access Token: " + (isEmpty(token.getAccessToken()) ? "--" : token.getAccessToken()));
+            });
         }
     }
 
@@ -118,9 +121,11 @@ public class UserInterface extends VBox {
             List<Record> holidayJobOptions = new ArrayList<>();
             holidayJobOptions.add(new Record(Record.IGNORE_RECORD_ID, "{ No selection: Omit time logs for public/bank holidays }"));
             holidayJobOptions.addAll(jobs);
-            updateJobDropdown(selectedJobDropdown, jobs, settings.getDefaultJobId());
-            updateJobDropdown(holidayJobDropdown, holidayJobOptions, settings.getHolidayJobId());
-            populateLeaveMapForm(settings.getLeaveToJobMap(), controller.findLeaveTypes(token.getUserMail(), true), jobs);
+            Platform.runLater(() -> {
+                updateJobDropdown(selectedJobDropdown, jobs, settings.getDefaultJobId());
+                updateJobDropdown(holidayJobDropdown, holidayJobOptions, settings.getHolidayJobId());
+                populateLeaveMapForm(settings.getLeaveToJobMap(), controller.findLeaveTypes(token.getUserMail(), true), jobs);
+            });
         }
     }
 
@@ -171,16 +176,12 @@ public class UserInterface extends VBox {
         Button createTimeLogsButton = new Button("Create Time Logs");
 
         addButton(updateJobListButton, (actionEvent) -> {
-            updateJobListButton.setDisable(true);
-            createTimeLogsButton.setDisable(true);
-            EXECUTOR_SERVICE.execute(() -> {
+            handleButtonClick(() -> {
                 controller.updateAccessToken(clientIdField.getText(), clientSecretField.getText(), grantTokenField.getText(), refreshTokenField.getText());
                 controller.updateUserEmail(userEmailField.getText());
                 updateFields();
                 populateSettings();
-                updateJobListButton.setDisable(false);
-                createTimeLogsButton.setDisable(false);
-            });
+            }, updateJobListButton, createTimeLogsButton);
         });
 
         addNode(accessTokenLabel);
@@ -194,10 +195,10 @@ public class UserInterface extends VBox {
 
         addNode(leaveMapForm);
 
-        addButton(createTimeLogsButton, (actionEvent) -> {
-            updateJobListButton.setDisable(true);
-            createTimeLogsButton.setDisable(true);
-            EXECUTOR_SERVICE.execute(() -> {
+        DateRangeFormBox dateRangeFormBox = new DateRangeFormBox( LocalDate.now().with(TemporalAdjusters.firstDayOfMonth()), LocalDate.now().with(TemporalAdjusters.lastDayOfMonth()));
+        addNode(dateRangeFormBox);
+
+        addButton(createTimeLogsButton, (actionEvent) -> handleButtonClick(() -> {
                 Map<String, String> leaveToJobMap = new HashMap<>();
                 for (Map.Entry<Record, ComboBox<Record>> leaveJobEntry : leaveMapControls.entrySet()) {
                     ComboBox<Record> leaveJobSelection = leaveJobEntry.getValue();
@@ -216,15 +217,29 @@ public class UserInterface extends VBox {
                         dayHourFields.get(5).getValue(),
                         dayHourFields.get(6).getValue(),
                         dayHourFields.get(7).getValue());
-                controller.addTimeLogs(userEmailField.getText(), LocalDate.now().with(TemporalAdjusters.firstDayOfMonth()), LocalDate.now().with(TemporalAdjusters.lastDayOfMonth()));
-                updateJobListButton.setDisable(false);
-                createTimeLogsButton.setDisable(false);
-            });
-        });
+                controller.addTimeLogs(userEmailField.getText(), dateRangeFormBox.selectedFromDate(), dateRangeFormBox.selectedToDate());
+            }, updateJobListButton, createTimeLogsButton)
+        );
 
         addSeparator();
 
         addDisplayArea("Log", infoDisplayArea);
+    }
+
+    private void handleButtonClick(Runnable runnable, Button... disableButtons) {
+        Platform.runLater(() -> {
+            for (Button button : disableButtons) {
+                button.setDisable(true);
+            }
+        });
+        executorService.execute(runnable);
+        executorService.execute(() -> {
+            Platform.runLater(() -> {
+                for (Button button : disableButtons) {
+                    button.setDisable(false);
+                }
+            });
+        });
     }
 
     private void addButton(Button button, EventHandler<ActionEvent> eventHandler) {

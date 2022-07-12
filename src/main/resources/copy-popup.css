@@ -1,0 +1,8 @@
+.copy-popup .custom-menu-item {
+    -fx-background-color: white;
+}
+
+.copy-popup .custom-menu-item .label {
+    -fx-text-fill: black;
+    -fx-padding: 0;
+}

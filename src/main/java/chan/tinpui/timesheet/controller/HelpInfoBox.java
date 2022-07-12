@@ -2,7 +2,10 @@ package chan.tinpui.timesheet.controller;
 
 import javafx.geometry.Insets;
 import javafx.scene.Node;
+import javafx.scene.Scene;
 import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextField;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
@@ -13,10 +16,12 @@ import javafx.scene.layout.Border;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.VBox;
+import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextFlow;
+import javafx.stage.Stage;
 
 import java.awt.*;
 import java.io.IOException;
@@ -28,19 +33,13 @@ import java.util.List;
 
 public class HelpInfoBox extends VBox {
 
-    public static final HelpInfoBox INSTANCE = new HelpInfoBox();
-
-    private static double computeTextWidth(Font font, String text) {
-        Text helper = new Text();
-        helper.setText(text);
-        helper.setFont(font);
-        helper.setWrappingWidth(0.0D);
-        helper.setLineSpacing(0.0D);
-        helper.setWrappingWidth((int) Math.ceil(Math.min(helper.prefWidth(-1.0D), 0.0d)));
-        return Math.ceil(helper.getLayoutBounds().getWidth());
-    }
+    private static Stage HELP_INFO_STAGE;
+    private ContextMenu contextMenu;
 
     private HelpInfoBox() {
+        this.contextMenu = new ContextMenu();
+        contextMenu.getStyleClass().add("copy-popup");
+        contextMenu.getItems().add(new CustomMenuItem(new Label("Copied!")));
         addCollapsiblePane("First Time Setup",
                 createTextFlow("Log into ", hyperlink("https://api-console.zoho.com/")),
                 createTextFlow("Add a new client and select ", bold("Self Client"), " from the list of client types to create your new client."),
@@ -55,13 +54,43 @@ public class HelpInfoBox extends VBox {
                 createTextFlow(bold("Holiday"), " - Select the job to use for adding time logs for public holidays."),
                 createTextFlow("You can configure how many total hours of logs each day of the week should have."),
                 createTextFlow("For each leave type, you may also select the job to use when adding time logs for days in which you have an approved leave."),
-                createTextFlow("Clicking the ", bold("Create Time Logs"), " button will save the above settings for next time and start creating time logs in Zoho for the current month.")
+                createTextFlow("Clicking the ", bold("Create Time Logs"), " button will save the above settings for next time and start creating time logs in Zoho for selected date range.")
         );
         addCollapsiblePane("More Information", createTextFlow("The client ID, client secret, grant token, refresh token and email will be saved for future use when the access token is successfully refreshed. These will be used automatically next time on start up."),
                 createTextFlow("The token details and settings will be saved in the ", bold("zoho-personal-timesheet"), " folder in your home directory."),
+                createTextFlow("The selected date range will not be saved, it will default to start of current month to end of current month on start up."),
                 createTextFlow("Clicking the ", bold("Create Time Logs"), " button only submits time logs without creating or submitting the timesheet, please log into Zoho to check and submit your timesheet."),
                 createTextFlow("Zoho Personal Timesheet will factor in any existing time logs already entered when creating time logs.")
         );
+    }
+
+    public static Hyperlink createHelpLink(Stage stage) {
+        Hyperlink hyperlink = new Hyperlink();
+        hyperlink.setText("Need help?");
+        hyperlink.setTextFill(Color.BLUE);
+        hyperlink.setBorder(Border.EMPTY);
+        Font font = hyperlink.getFont();
+        hyperlink.setFont(Font.font(font.getName(), FontWeight.BOLD, font.getSize()));
+        hyperlink.setOnAction(actionEvent -> {
+            synchronized (HelpInfoBox.class) {
+                if (HELP_INFO_STAGE == null) {
+                    HELP_INFO_STAGE = new Stage();
+                    ScrollPane scrollPane = new ScrollPane();
+                    scrollPane.setFitToWidth(true);
+                    scrollPane.setContent(new HelpInfoBox());
+                    scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+                    Scene scene = new Scene(scrollPane, 900, 697);
+                    scene.getStylesheets().add(HelpInfoBox.class.getClassLoader().getResource("copy-popup.css").toExternalForm());
+                    HELP_INFO_STAGE.setTitle("How to use Zoho Personal Timesheet");
+                    HELP_INFO_STAGE.setMinWidth(880);
+                    HELP_INFO_STAGE.setMinHeight(200);
+                    HELP_INFO_STAGE.setScene(scene);
+                    HELP_INFO_STAGE.initOwner(stage);
+                }
+                HELP_INFO_STAGE.show();
+            }
+        });
+        return hyperlink;
     }
 
     private void addCollapsiblePane(String title, Node... nodes) {
@@ -129,17 +158,26 @@ public class HelpInfoBox extends VBox {
         if (inputStream == null) {
             button.setText("Copy");
         } else {
-            Image imageOk = new Image(inputStream);
-            button.setGraphic(new ImageView(imageOk));
+            button.setGraphic(new ImageView(new Image(inputStream)));
         }
-        button.setOnAction(actionEvent -> {
+        button.setOnMouseClicked(mouseEvent -> {
             ClipboardContent clipboardContent = new ClipboardContent();
             clipboardContent.putString(text);
             Clipboard.getSystemClipboard().setContent(clipboardContent);
+            contextMenu.show(button, mouseEvent.getScreenX(), mouseEvent.getScreenY());
         });
         hBox.getChildren().add(button);
 
         return hBox;
     }
 
+    private static double computeTextWidth(Font font, String text) {
+        Text helper = new Text();
+        helper.setText(text);
+        helper.setFont(font);
+        helper.setWrappingWidth(0.0D);
+        helper.setLineSpacing(0.0D);
+        helper.setWrappingWidth((int) Math.ceil(Math.min(helper.prefWidth(-1.0D), 0.0d)));
+        return Math.ceil(helper.getLayoutBounds().getWidth());
+    }
 }
