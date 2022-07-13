@@ -1,5 +1,6 @@
 package chan.tinpui.timesheet.controller;
 
+import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.scene.Node;
 import javafx.scene.Scene;
@@ -30,13 +31,18 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class HelpInfoBox extends VBox {
 
     private static Stage HELP_INFO_STAGE;
-    private ContextMenu contextMenu;
+
+    private final ContextMenu contextMenu;
+    private AtomicLong autoHideTime;
+    private Thread autoHideThread;
 
     private HelpInfoBox() {
+        this.autoHideTime = new AtomicLong();
         this.contextMenu = new ContextMenu();
         contextMenu.getStyleClass().add("copy-popup");
         contextMenu.getItems().add(new CustomMenuItem(new Label("Copied!")));
@@ -164,7 +170,31 @@ public class HelpInfoBox extends VBox {
             ClipboardContent clipboardContent = new ClipboardContent();
             clipboardContent.putString(text);
             Clipboard.getSystemClipboard().setContent(clipboardContent);
-            contextMenu.show(button, mouseEvent.getScreenX(), mouseEvent.getScreenY());
+            synchronized (contextMenu) {
+                Platform.runLater(() -> contextMenu.show(button, mouseEvent.getScreenX(), mouseEvent.getScreenY()));
+                long newTimeForAutoHide = System.currentTimeMillis() + 1500;
+                autoHideTime.set(newTimeForAutoHide);
+                if (autoHideThread == null) {
+                    this.autoHideThread = new Thread(() -> {
+                        boolean continueThread = true;
+                        do {
+                            try {
+                                Thread.sleep(200);
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
+                            synchronized (contextMenu) {
+                                if (System.currentTimeMillis() > this.autoHideTime.get()) {
+                                    this.autoHideThread = null;
+                                    Platform.runLater(contextMenu::hide);
+                                    continueThread = false;
+                                }
+                            }
+                        } while (continueThread);
+                    });
+                    autoHideThread.start();
+                }
+            }
         });
         hBox.getChildren().add(button);
 
