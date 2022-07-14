@@ -33,6 +33,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
+import static chan.tinpui.timesheet.controller.utils.ControllerUtils.computeTextWidth;
+
 public class HelpInfoBox extends VBox {
 
     private static Stage HELP_INFO_STAGE;
@@ -199,15 +201,5 @@ public class HelpInfoBox extends VBox {
         hBox.getChildren().add(button);
 
         return hBox;
-    }
-
-    private static double computeTextWidth(Font font, String text) {
-        Text helper = new Text();
-        helper.setText(text);
-        helper.setFont(font);
-        helper.setWrappingWidth(0.0D);
-        helper.setLineSpacing(0.0D);
-        helper.setWrappingWidth((int) Math.ceil(Math.min(helper.prefWidth(-1.0D), 0.0d)));
-        return Math.ceil(helper.getLayoutBounds().getWidth());
     }
 }

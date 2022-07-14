@@ -14,10 +14,12 @@ import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Hyperlink;
 import javafx.scene.control.ProgressIndicator;
+import javafx.scene.image.Image;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 
 import java.io.File;
+import java.io.InputStream;
 import java.util.concurrent.CompletableFuture;
 
 public class JavaFxApplication extends Application {
@@ -47,8 +49,12 @@ public class JavaFxApplication extends Application {
         vBox.getChildren().add(loadingScreen);
         vBox.getChildren().add(userInterface);
         Scene scene = new Scene(vBox, 635, 600);
+        InputStream zohoIcon = getClass().getClassLoader().getResourceAsStream("zoho-icon.png");
+        if (zohoIcon != null) {
+            stage.getIcons().add(new Image(zohoIcon));
+        }
         stage.setScene(scene);
-        stage.setMinWidth(600);
+        stage.setMinWidth(510);
         stage.setMinHeight(560);
         stage.setTitle("Zoho Personal Timesheet");
         stage.show();

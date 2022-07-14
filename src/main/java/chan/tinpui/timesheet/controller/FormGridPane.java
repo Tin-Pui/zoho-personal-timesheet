@@ -9,6 +9,8 @@ import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Priority;
 
+import static chan.tinpui.timesheet.controller.utils.ControllerUtils.computeTextWidth;
+
 public class FormGridPane extends GridPane {
 
     private int numberOfFields;
@@ -29,6 +31,7 @@ public class FormGridPane extends GridPane {
 
     public void addFormField(String label, Node formField) {
         Label labelComponent = new Label(label);
+        labelComponent.setMinWidth(computeTextWidth(labelComponent.getFont(), label));
         this.add(labelComponent, 0, numberOfFields);
         this.add(formField, 1, numberOfFields);
         numberOfFields++;

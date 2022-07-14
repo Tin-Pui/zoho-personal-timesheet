@@ -254,7 +254,7 @@ public class UserInterface extends VBox {
         dayHoursPane.setHgap(2);
         dayHoursPane.setAlignment(Pos.CENTER);
         ColumnConstraints column1 = new ColumnConstraints();
-        column1.setMinWidth(40);
+        column1.setMinWidth(32);
         dayHoursPane.getColumnConstraints().add(column1);
         dayHoursPane.add(new Label(), 0, 0);
         ColumnConstraints dayConstraints = new ColumnConstraints();
