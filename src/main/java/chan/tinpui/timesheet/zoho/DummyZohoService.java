@@ -35,7 +35,8 @@ public class DummyZohoService implements ZohoService {
     }
 
     @Override
-    public List<Record> getJobsForUser(OAuthToken authToken) {
+    public List<Record> getJobsForUser(OAuthToken authToken) throws ZohoException {
+        checkEmail(authToken);
         simulateResponseTime(500);
         List<Record> jobs = new ArrayList<>();
         jobs.add(new Record("100001", "Internal Annual Leave"));
@@ -48,7 +49,8 @@ public class DummyZohoService implements ZohoService {
     }
 
     @Override
-    public List<Record> getLeaveTypesForUser(OAuthToken authToken) {
+    public List<Record> getLeaveTypesForUser(OAuthToken authToken) throws ZohoException {
+        checkEmail(authToken);
         simulateResponseTime(500);
         List<Record> leaveTypes = new ArrayList<>();
         leaveTypes.add(new Record("200001", "Sick Day"));
@@ -59,7 +61,8 @@ public class DummyZohoService implements ZohoService {
     }
 
     @Override
-    public Map<LocalDate, HoursToLog> getApprovedLeavesForUser(OAuthToken authToken, LocalDate fromDate, LocalDate toDate, Settings settings) {
+    public Map<LocalDate, HoursToLog> getApprovedLeavesForUser(OAuthToken authToken, LocalDate fromDate, LocalDate toDate, Settings settings) throws ZohoException {
+        checkEmail(authToken);
         simulateResponseTime(100);
         Map<LocalDate, HoursToLog> approvedLeavesForUser = new HashMap<>();
         LocalDate localDate = fromDate.withDayOfMonth(15).with(TemporalAdjusters.nextOrSame(DayOfWeek.MONDAY));
@@ -71,18 +74,22 @@ public class DummyZohoService implements ZohoService {
     }
 
     @Override
-    public Map<LocalDate, HoursToLog> getExistingTimeLogsForUser(OAuthToken authToken, LocalDate fromDate, LocalDate toDate) {
+    public Map<LocalDate, HoursToLog> getExistingTimeLogsForUser(OAuthToken authToken, LocalDate fromDate, LocalDate toDate) throws ZohoException {
+        checkEmail(authToken);
         simulateResponseTime(100);
         return new HashMap<>();
     }
 
     @Override
-    public Set<LocalDate> getHolidaysForUser(OAuthToken authToken, LocalDate fromDate, LocalDate toDate) {
+    public Set<LocalDate> getHolidaysForUser(OAuthToken authToken, LocalDate fromDate, LocalDate toDate) throws ZohoException {
+        checkEmail(authToken);
+        simulateResponseTime(100);
         return Collections.singleton( fromDate.with(TemporalAdjusters.lastDayOfMonth()).with(TemporalAdjusters.previousOrSame(DayOfWeek.FRIDAY)));
     }
 
     @Override
-    public void addTimeLog(OAuthToken authToken, LocalDate workDate, String jobId, String hours) {
+    public void addTimeLog(OAuthToken authToken, LocalDate workDate, String jobId, String hours) throws ZohoException {
+        checkEmail(authToken);
         simulateResponseTime(300);
         System.out.println("Adding time long for " + jobId + " with " + hours + " hours.");
     }
@@ -92,6 +99,12 @@ public class DummyZohoService implements ZohoService {
             Thread.sleep(millis);
         } catch (InterruptedException e) {
             e.printStackTrace();
+        }
+    }
+
+    private void checkEmail(OAuthToken authToken) throws ZohoException {
+        if (!authToken.getUserMail().contains("@") || authToken.getUserMail().equals("login.example@email.com")) {
+            throw new ZohoException("Invalid email");
         }
     }
 

@@ -164,10 +164,11 @@ public class Controller {
         }
     }
 
-    public void addTimeLogs(String userEmail, LocalDate fromDate, LocalDate toDate) {
+    public boolean addTimeLogs(String userEmail, LocalDate fromDate, LocalDate toDate) {
         try {
             if (isEmpty(settings.getDefaultJobId())) {
                 addLog("Cannot add time logs without a selected job");
+                return false;
             } else {
                 token.setUserMail(userEmail);
                 // Fetch user's holidays
@@ -213,11 +214,13 @@ public class Controller {
                     }
                 }
                 addLog("Finished creating time logs for dates from " + fromDate + " to " + toDate);
+                return true;
             }
         } catch (Exception e) {
             // TODO : What to do when catching InvalidAuthTokenZohoException
             e.printStackTrace();
             addLog("Error occurred");
+            return false;
         }
     }
 

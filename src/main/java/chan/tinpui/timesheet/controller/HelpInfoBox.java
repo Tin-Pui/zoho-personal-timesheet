@@ -56,7 +56,8 @@ public class HelpInfoBox extends VBox {
                 createTextFlow("The grant token code can now be copied. This will be valid for the duration selected."),
                 createTextFlow("Enter the client ID, client secret, grant token and your email, then click the ", bold("Update Job List"), " button."),
                 createTextFlow("If successful, the access token will be displayed, the refresh token will be populated and used next time."),
-                createTextFlow("If you can see the access token but cannot select any jobs, ensure that you have entered the correct email then click the ", bold("Update Job List"), " button again.")
+                createTextFlow("If you do not see the access token, check the client ID, client secret and grant token, then try again."),
+                createTextFlow("If you can see the access token but cannot select any jobs, ensure that you have entered the correct email then try again.")
         );
         addCollapsiblePane("Settings for Creating Time Logs", createTextFlow(bold("Job"), " - Select the main job that you are doing while at work."),
                 createTextFlow(bold("Holiday"), " - Select the job to use for adding time logs for public holidays."),
@@ -87,7 +88,7 @@ public class HelpInfoBox extends VBox {
                     scrollPane.setFitToWidth(true);
                     scrollPane.setContent(new HelpInfoBox());
                     scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
-                    Scene scene = new Scene(scrollPane, 900, 697);
+                    Scene scene = new Scene(scrollPane, 900, 725);
                     scene.getStylesheets().add(HelpInfoBox.class.getClassLoader().getResource("copy-popup.css").toExternalForm());
                     HELP_INFO_STAGE.setTitle("How to use Zoho Personal Timesheet");
                     HELP_INFO_STAGE.setMinWidth(880);

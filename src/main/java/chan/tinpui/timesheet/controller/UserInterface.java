@@ -13,10 +13,7 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.*;
-import javafx.scene.layout.ColumnConstraints;
-import javafx.scene.layout.GridPane;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.VBox;
+import javafx.scene.layout.*;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -26,6 +23,7 @@ import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import static chan.tinpui.timesheet.controller.StatusLabel.*;
 import static org.apache.commons.lang3.StringUtils.isEmpty;
 
 public class UserInterface extends VBox {
@@ -41,6 +39,7 @@ public class UserInterface extends VBox {
     private TextField grantTokenField;
     private TextField refreshTokenField;
     private TextField userEmailField;
+    private StatusLabel updateJobsStatusLabel;
     private Label accessTokenLabel;
     private ComboBox<Record> selectedJobDropdown;
     private ComboBox<Record> holidayJobDropdown;
@@ -55,6 +54,7 @@ public class UserInterface extends VBox {
         this.grantTokenField = new TextField();
         this.refreshTokenField = new TextField();
         this.userEmailField = new TextField();
+        this.updateJobsStatusLabel = new StatusLabel();
         this.accessTokenLabel = new Label("Access Token");
         this.selectedJobDropdown = new ComboBox<>();
         selectedJobDropdown.setMaxWidth(Double.MAX_VALUE);
@@ -83,9 +83,12 @@ public class UserInterface extends VBox {
         controller.addAccessTokenListener(accessToken -> Platform.runLater(() -> accessTokenLabel.setText(accessToken)));
         controller.addLogListener(log -> Platform.runLater(() -> infoDisplayArea.appendText("\n" + log)));
         updateFields();
-        populateSettings();
+        boolean jobsUpdated = populateSettings();
         addComponents();
         Platform.runLater(() -> {
+            if (jobsUpdated) {
+                updateJobsStatusLabel.setState(FINISHED_OK);
+            }
             VBox.setVgrow(this, Priority.ALWAYS);
             this.loadingScreen.setVisible(false);
             setVisible(true);
@@ -113,7 +116,7 @@ public class UserInterface extends VBox {
         }
     }
 
-    private void populateSettings() {
+    private boolean populateSettings() {
         if (controller.isTokenActive()) {
             OAuthToken token = controller.getToken();
             Settings settings = controller.getSettings();
@@ -126,6 +129,9 @@ public class UserInterface extends VBox {
                 updateJobDropdown(holidayJobDropdown, holidayJobOptions, settings.getHolidayJobId());
                 populateLeaveMapForm(settings.getLeaveToJobMap(), controller.findLeaveTypes(token.getUserMail(), true), jobs);
             });
+            return !jobs.isEmpty();
+        } else {
+            return false;
         }
     }
 
@@ -174,15 +180,16 @@ public class UserInterface extends VBox {
 
         Button updateJobListButton = new Button("Update Job List");
         Button createTimeLogsButton = new Button("Create Time Logs");
+        StatusLabel createTimeLogsStatusLabel = new StatusLabel();
 
-        addButton(updateJobListButton, (actionEvent) -> {
-            handleButtonClick(() -> {
-                controller.updateAccessToken(clientIdField.getText(), clientSecretField.getText(), grantTokenField.getText(), refreshTokenField.getText());
-                controller.updateUserEmail(userEmailField.getText());
-                updateFields();
-                populateSettings();
-            }, updateJobListButton, createTimeLogsButton);
-        });
+        addButton(updateJobListButton, updateJobsStatusLabel, (actionEvent) -> handleButtonClick(() -> {
+            Platform.runLater(() -> updateJobsStatusLabel.setState(IN_PROGRESS));
+            controller.updateAccessToken(clientIdField.getText(), clientSecretField.getText(), grantTokenField.getText(), refreshTokenField.getText());
+            controller.updateUserEmail(userEmailField.getText());
+            updateFields();
+            boolean jobsUpdated = populateSettings();
+            Platform.runLater(() -> updateJobsStatusLabel.setState(jobsUpdated ? FINISHED_OK : FINISHED_NOT_OK));
+        }, updateJobListButton, createTimeLogsButton));
 
         addNode(accessTokenLabel);
 
@@ -198,28 +205,29 @@ public class UserInterface extends VBox {
         DateRangeFormBox dateRangeFormBox = new DateRangeFormBox( LocalDate.now().with(TemporalAdjusters.firstDayOfMonth()), LocalDate.now().with(TemporalAdjusters.lastDayOfMonth()));
         addNode(dateRangeFormBox);
 
-        addButton(createTimeLogsButton, (actionEvent) -> handleButtonClick(() -> {
-                Map<String, String> leaveToJobMap = new HashMap<>();
-                for (Map.Entry<Record, ComboBox<Record>> leaveJobEntry : leaveMapControls.entrySet()) {
-                    ComboBox<Record> leaveJobSelection = leaveJobEntry.getValue();
-                    if (leaveJobSelection.getValue() != null && !leaveJobSelection.getValue().getId().equals(Record.IGNORE_RECORD_ID)) {
-                        leaveToJobMap.put(leaveJobEntry.getKey().getId(), leaveJobSelection.getValue().getId());
-                    }
+        addButton(createTimeLogsButton, createTimeLogsStatusLabel, (actionEvent) -> handleButtonClick(() -> {
+            Platform.runLater(() -> createTimeLogsStatusLabel.setState(IN_PROGRESS));
+            Map<String, String> leaveToJobMap = new HashMap<>();
+            for (Map.Entry<Record, ComboBox<Record>> leaveJobEntry : leaveMapControls.entrySet()) {
+                ComboBox<Record> leaveJobSelection = leaveJobEntry.getValue();
+                if (leaveJobSelection.getValue() != null && !leaveJobSelection.getValue().getId().equals(Record.IGNORE_RECORD_ID)) {
+                    leaveToJobMap.put(leaveJobEntry.getKey().getId(), leaveJobSelection.getValue().getId());
                 }
-                controller.saveSettings(
-                        selectedJobDropdown.getValue() == null ? "" : selectedJobDropdown.getValue().getId(),
-                        holidayJobDropdown.getValue() == null ? "" : holidayJobDropdown.getValue().getId(),
-                        leaveToJobMap,
-                        dayHourFields.get(1).getValue(),
-                        dayHourFields.get(2).getValue(),
-                        dayHourFields.get(3).getValue(),
-                        dayHourFields.get(4).getValue(),
-                        dayHourFields.get(5).getValue(),
-                        dayHourFields.get(6).getValue(),
-                        dayHourFields.get(7).getValue());
-                controller.addTimeLogs(userEmailField.getText(), dateRangeFormBox.selectedFromDate(), dateRangeFormBox.selectedToDate());
-            }, updateJobListButton, createTimeLogsButton)
-        );
+            }
+            controller.saveSettings(
+                    selectedJobDropdown.getValue() == null ? "" : selectedJobDropdown.getValue().getId(),
+                    holidayJobDropdown.getValue() == null ? "" : holidayJobDropdown.getValue().getId(),
+                    leaveToJobMap,
+                    dayHourFields.get(1).getValue(),
+                    dayHourFields.get(2).getValue(),
+                    dayHourFields.get(3).getValue(),
+                    dayHourFields.get(4).getValue(),
+                    dayHourFields.get(5).getValue(),
+                    dayHourFields.get(6).getValue(),
+                    dayHourFields.get(7).getValue());
+            boolean success = controller.addTimeLogs(userEmailField.getText(), dateRangeFormBox.selectedFromDate(), dateRangeFormBox.selectedToDate());
+            Platform.runLater(() -> createTimeLogsStatusLabel.setState(success ? FINISHED_OK : FINISHED_NOT_OK));
+        }, updateJobListButton, createTimeLogsButton));
 
         addSeparator();
 
@@ -242,11 +250,14 @@ public class UserInterface extends VBox {
         });
     }
 
-    private void addButton(Button button, EventHandler<ActionEvent> eventHandler) {
+    private void addButton(Button button, StatusLabel statusLabel, EventHandler<ActionEvent> eventHandler) {
+        statusLabel.translateXProperty().bind(button.heightProperty().divide(1.5).add(button.widthProperty().divide(2)));
+        StackPane stackPane = new StackPane();
         button.setOnAction(eventHandler);
         button.setPrefHeight(BUTTON_HEIGHT);
         button.setMinWidth(300);
-        addNode(button);
+        stackPane.getChildren().addAll(statusLabel, button);
+        addNode(stackPane);
     }
 
     private void addDayHoursSetting(Settings settings) {
