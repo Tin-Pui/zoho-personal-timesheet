@@ -11,6 +11,8 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.*;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.util.LinkedMultiValueMap;
@@ -28,6 +30,7 @@ import java.util.*;
 
 public class PeopleZohoService implements ZohoService {
 
+    private static final Logger LOG = LoggerFactory.getLogger(PeopleZohoService.class);
     private static final int INVALID_AUTH_ERROR_CODE = 7202;
     private static final String ACCESS_TOKEN_URL = "/oauth/v2/token";
     private static final String LOCAL_DATE_FORMAT_PATTERN = "yyyy-MM-dd";
@@ -48,6 +51,7 @@ public class PeopleZohoService implements ZohoService {
 
     private JSONObject parseAuthResponse(ResponseEntity<String> responseEntity) throws ZohoException {
         if (responseEntity.hasBody()) {
+            LOG.info(responseEntity.getBody());
             JSONObject response = new JSONObject(responseEntity.getBody());
             if (response.has("error")) {
                 throw new ZohoException(response.getString("error"));
@@ -62,10 +66,10 @@ public class PeopleZohoService implements ZohoService {
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", "Zoho-oauthtoken " + authToken.getAccessToken());
         HttpEntity<Void> request = new HttpEntity<>(headers);
-        System.out.println("GET: " + url);
+        LOG.info("GET: " + url);
         ResponseEntity<String> responseEntity = restTemplate.exchange(url, HttpMethod.GET, request, String.class);
         if (responseEntity.hasBody()) {
-            System.out.println(responseEntity.getBody());
+            LOG.info(responseEntity.getBody());
             return new JSONObject(responseEntity.getBody());
         } else {
             throw new ZohoException("Zoho response did not have a body");
@@ -111,7 +115,7 @@ public class PeopleZohoService implements ZohoService {
         map.add("code", grantTokenCode);
         HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(map, headers);
         String url = domain.accountsUrl + ACCESS_TOKEN_URL;
-        System.out.println("POST: " + url);
+        LOG.info("POST: " + url);
         ResponseEntity<String> responseEntity = restTemplate.postForEntity(url, request, String.class);
         try {
             JSONObject response = parseAuthResponse(responseEntity);
@@ -131,7 +135,7 @@ public class PeopleZohoService implements ZohoService {
     @Override
     public OAuthToken refreshAuthToken(OAuthToken authToken, ZohoDomain domain) throws ZohoException {
         String url = domain.accountsUrl + ACCESS_TOKEN_URL + "?refresh_token=" + authToken.getRefreshToken() + "&client_id=" + authToken.getClientId() + "&client_secret=" + authToken.getClientSecret() + "&grant_type=refresh_token";
-        System.out.println("POST: " + url);
+        LOG.info("POST: " + url);
         ResponseEntity<String> responseEntity = restTemplate.postForEntity(url, null, String.class);
         JSONObject response = parseAuthResponse(responseEntity);
         if (!response.has("access_token")) {
@@ -200,7 +204,7 @@ public class PeopleZohoService implements ZohoService {
                 dayDetails.keys().forEachRemaining(date -> {
                     double leaveCount = Double.parseDouble(dayDetails.getJSONObject(date).getString("LeaveCount"));
                     LocalDate localDate = LocalDate.parse(date, LEAVE_FORM_DATE_FORMATTER);
-                    System.out.println("Found approved leave for " + localDate + " with count " + leaveCount);
+                    LOG.info("Found approved leave for " + localDate + " with count " + leaveCount);
                     int hoursInDay = settings.getHoursForDay(localDate.getDayOfWeek());
                     approvedLeavesForUser.computeIfAbsent(localDate, d -> new WorkdayHoursToLog(new Record("", ""), 0))
                             .addLeaveJobHoursToLog(leaveType, hoursInDay * leaveCount);
@@ -231,7 +235,7 @@ public class PeopleZohoService implements ZohoService {
 
     @Override
     public Set<LocalDate> getHolidaysForUser(OAuthToken authToken, LocalDate fromDate, LocalDate toDate) throws ZohoException {
-        System.out.println("Fetching from " + fromDate + " to " + toDate);
+        LOG.info("Fetching from " + fromDate + " to " + toDate);
         String url = "https://people.zoho.com/people/api/leave/v2/holidays/get?employee=" + authToken.getUserMail() +
                 "&from=" + fromDate.format(LOCAL_DATE_FORMATTER) +
                 "&to=" + toDate.format(LOCAL_DATE_FORMATTER) +
@@ -252,12 +256,12 @@ public class PeopleZohoService implements ZohoService {
                 "&jobId=" + jobId +
                 "&hours=" + hours +
                 "&dateFormat=" + LOCAL_DATE_FORMAT_PATTERN;
-        System.out.println("POST: " + url);
+        LOG.info("POST: " + url);
         HttpHeaders headers = new HttpHeaders();
         headers.set("Authorization", "Zoho-oauthtoken " + authToken.getAccessToken());
         HttpEntity<Void> request = new HttpEntity<>(headers);
         ResponseEntity<String> responseEntity = restTemplate.exchange(url, HttpMethod.POST, request, String.class);
-        System.out.println(responseEntity.getBody());
+        LOG.info(responseEntity.getBody());
         if (responseEntity.getStatusCode() != HttpStatus.OK) {
             throw new ZohoException(responseEntity.getBody());
         }

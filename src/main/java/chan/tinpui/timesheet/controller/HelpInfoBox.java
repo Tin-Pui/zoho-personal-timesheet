@@ -33,7 +33,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static chan.tinpui.timesheet.controller.utils.ControllerUtils.computeTextWidth;
+import static chan.tinpui.timesheet.controller.utils.UserInterfaceUtils.computeTextWidth;
 
 public class HelpInfoBox extends VBox {
 
@@ -59,13 +59,15 @@ public class HelpInfoBox extends VBox {
                 createTextFlow("If you do not see the access token, check the client ID, client secret and grant token, then try again."),
                 createTextFlow("If you can see the access token but cannot select any jobs, ensure that you have entered the correct email then try again.")
         );
-        addCollapsiblePane("Settings for Creating Time Logs", createTextFlow(bold("Job"), " - Select the main job that you are doing while at work."),
+        addCollapsiblePane("Settings for Creating Time Logs",
+                createTextFlow(bold("Job"), " - Select the main job that you are doing while at work."),
                 createTextFlow(bold("Holiday"), " - Select the job to use for adding time logs for public holidays."),
                 createTextFlow("You can configure how many total hours of logs each day of the week should have."),
                 createTextFlow("For each leave type, you may also select the job to use when adding time logs for days in which you have an approved leave."),
                 createTextFlow("Clicking the ", bold("Create Time Logs"), " button will save the above settings for next time and start creating time logs in Zoho for selected date range.")
         );
-        addCollapsiblePane("More Information", createTextFlow("The client ID, client secret, grant token, refresh token and email will be saved for future use when the access token is successfully refreshed. These will be used automatically next time on start up."),
+        addCollapsiblePane("More Information",
+                createTextFlow("The client ID, client secret, grant token, refresh token and email will be saved for future use when the access token is successfully refreshed. These will be used automatically next time on start up."),
                 createTextFlow("The token details and settings will be saved in the ", bold("zoho-personal-timesheet"), " folder in your home directory."),
                 createTextFlow("The selected date range will not be saved, it will default to start of current month to end of current month on start up."),
                 createTextFlow("Clicking the ", bold("Create Time Logs"), " button only submits time logs without creating or submitting the timesheet, please log into Zoho to check and submit your timesheet."),

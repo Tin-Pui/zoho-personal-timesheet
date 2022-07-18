@@ -9,7 +9,7 @@ import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Priority;
 
-import static chan.tinpui.timesheet.controller.utils.ControllerUtils.computeTextWidth;
+import static chan.tinpui.timesheet.controller.utils.UserInterfaceUtils.computeTextWidth;
 
 public class FormGridPane extends GridPane {
 

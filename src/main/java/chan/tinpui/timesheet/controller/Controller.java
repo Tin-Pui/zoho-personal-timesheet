@@ -7,6 +7,8 @@ import chan.tinpui.timesheet.zoho.ZohoService;
 import chan.tinpui.timesheet.zoho.domain.*;
 import com.zoho.api.authenticator.OAuthToken;
 import com.zoho.crm.api.exception.SDKException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.time.LocalDate;
@@ -21,6 +23,7 @@ import static org.apache.commons.lang3.StringUtils.isEmpty;
 public class Controller {
 
     private static final ZohoDomain ZOHO_DOMAIN = ZohoDomain.US;
+    private static final Logger LOG = LoggerFactory.getLogger(Controller.class);
     private static final DateTimeFormatter LOG_TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm:ss");
     private final TokenService tokenService;
     private final SettingsService settingsService;
@@ -71,7 +74,7 @@ public class Controller {
 
     public void addLog(String message) {
         String log = LocalTime.now().format(LOG_TIME_FORMATTER) + " - " + message;
-        System.out.println(log);
+        LOG.info(log);
         logs.add(log);
         logListeners.forEach(listener -> listener.accept(log));
     }

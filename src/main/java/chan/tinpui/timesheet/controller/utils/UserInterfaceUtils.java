@@ -3,7 +3,7 @@ package chan.tinpui.timesheet.controller.utils;
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 
-public class ControllerUtils {
+public class UserInterfaceUtils {
 
     private static final Text HELPER = new Text();
     static {

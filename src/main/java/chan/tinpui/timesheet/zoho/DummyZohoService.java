@@ -4,6 +4,8 @@ import chan.tinpui.timesheet.exception.ZohoException;
 import chan.tinpui.timesheet.zoho.domain.*;
 import com.zoho.api.authenticator.OAuthToken;
 import com.zoho.crm.api.exception.SDKException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -12,6 +14,7 @@ import java.util.*;
 
 public class DummyZohoService implements ZohoService {
 
+    private static final Logger LOG = LoggerFactory.getLogger(DummyZohoService.class);
     private static final Random RANDOM = new Random();
 
     @Override
@@ -91,7 +94,7 @@ public class DummyZohoService implements ZohoService {
     public void addTimeLog(OAuthToken authToken, LocalDate workDate, String jobId, String hours) throws ZohoException {
         checkEmail(authToken);
         simulateResponseTime(300);
-        System.out.println("Adding time long for " + jobId + " with " + hours + " hours.");
+        LOG.info("Adding time log for " + jobId + " with " + hours + " hours.");
     }
 
     private void simulateResponseTime(long millis) {

@@ -1,0 +1,26 @@
+<configuration>
+
+    <appender name="LOGFILE" class="ch.qos.logback.core.FileAppender">
+        <append>false</append>
+        <file>${user.home}/zoho-personal-timesheet/zoho.log</file>
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <logger name="chan.tinpui.timesheet" level="DEBUG">
+        <appender-ref ref="LOGFILE" />
+    </logger>
+    <logger name="chan.tinpui.timesheet.controller.Controller" level="DEBUG">
+        <appender-ref ref="STDOUT" />
+    </logger>
+
+    <root level="OFF">
+    </root>
+</configuration>
