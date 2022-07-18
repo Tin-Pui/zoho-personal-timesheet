@@ -1,6 +1,7 @@
 package chan.tinpui.timesheet.controller;
 
 import chan.tinpui.timesheet.exception.InvalidAuthTokenZohoException;
+import chan.tinpui.timesheet.exception.ZohoException;
 import chan.tinpui.timesheet.persistence.SettingsService;
 import chan.tinpui.timesheet.persistence.TokenService;
 import chan.tinpui.timesheet.zoho.ZohoService;
@@ -105,15 +106,20 @@ public class Controller {
         return tokenActive;
     }
 
-    public void refreshToken() {
+    public void updateAccessToken(String clientId, String clientSecret, String grantToken, String refreshToken) {
         try {
-            if (token != null && !isEmpty(token.getRefreshToken())) {
-                zohoService.refreshAuthToken(token, ZOHO_DOMAIN);
-                tokenActive = true;
-                accessTokenListeners.forEach(listener -> listener.accept(token.getAccessToken()));
-                addLog("Access token successfully refreshed");
+            if (isEmpty(refreshToken)) {
+                generateToken(clientId, clientSecret, grantToken);
             } else {
-                tokenActive = false;
+                if (!refreshToken.equals(token.getRefreshToken())) {
+                    token.setClientId(clientId);
+                    token.setClientSecret(clientSecret);
+                    token.setRefreshToken(refreshToken);
+                    refreshToken();
+                }
+                if (!tokenActive) {
+                    generateToken(clientId, clientSecret, grantToken);
+                }
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -122,19 +128,22 @@ public class Controller {
         }
     }
 
-    public void updateAccessToken(String clientId, String clientSecret, String grantToken, String refreshToken) {
+    private void generateToken(String clientId, String clientSecret, String grantToken) throws ZohoException {
+        token = zohoService.generateAuthToken(clientId, clientSecret, grantToken, ZOHO_DOMAIN);
+        tokenActive = true;
+        accessTokenListeners.forEach(listener -> listener.accept(token.getAccessToken()));
+        addLog("Access token successfully generated");
+    }
+
+    private void refreshToken() {
         try {
-            if (!isEmpty(refreshToken) && (!refreshToken.equals(token.getRefreshToken()) || !tokenActive)) {
-                token.setClientId(clientId);
-                token.setClientSecret(clientSecret);
-                token.setRefreshToken(refreshToken);
-                refreshToken();
-            }
-            if (!tokenActive) {
-                token = zohoService.generateAuthToken(clientId, clientSecret, grantToken, ZOHO_DOMAIN);
+            if (token != null && !isEmpty(token.getRefreshToken())) {
+                zohoService.refreshAuthToken(token, ZOHO_DOMAIN);
                 tokenActive = true;
                 accessTokenListeners.forEach(listener -> listener.accept(token.getAccessToken()));
-                addLog("Access token successfully generated");
+                addLog("Access token successfully refreshed");
+            } else {
+                tokenActive = false;
             }
         } catch (Exception e) {
             e.printStackTrace();
