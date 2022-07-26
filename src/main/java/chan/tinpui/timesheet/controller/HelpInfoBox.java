@@ -71,7 +71,7 @@ public class HelpInfoBox extends VBox {
                 createTextFlow("The token details and settings will be saved in the ", bold("zoho-personal-timesheet"), " folder in your home directory."),
                 createTextFlow("The selected date range will not be saved, it will default to start of current month to end of current month on start up."),
                 createTextFlow("Clicking the ", bold("Create Time Logs"), " button only submits time logs without creating or submitting the timesheet, please log into Zoho to check and submit your timesheet."),
-                createTextFlow("Zoho Personal Timesheet will factor in any existing time logs already entered when creating time logs.")
+                createTextFlow("Zoho Personal Timesheet will factor in any existing time logs already entered in Zoho (regardless of whether it has been submitted in a timesheet or not) unless the \"Ignore existing time logs\" option is selected.")
         );
     }
 
@@ -90,7 +90,7 @@ public class HelpInfoBox extends VBox {
                     scrollPane.setFitToWidth(true);
                     scrollPane.setContent(new HelpInfoBox());
                     scrollPane.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
-                    Scene scene = new Scene(scrollPane, 900, 725);
+                    Scene scene = new Scene(scrollPane, 900, 745);
                     scene.getStylesheets().add(HelpInfoBox.class.getClassLoader().getResource("copy-popup.css").toExternalForm());
                     HELP_INFO_STAGE.setTitle("How to use Zoho Personal Timesheet");
                     HELP_INFO_STAGE.setMinWidth(880);

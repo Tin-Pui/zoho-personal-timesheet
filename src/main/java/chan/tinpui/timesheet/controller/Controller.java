@@ -176,7 +176,7 @@ public class Controller {
         }
     }
 
-    public boolean addTimeLogs(String userEmail, LocalDate fromDate, LocalDate toDate) {
+    public boolean addTimeLogs(String userEmail, LocalDate fromDate, LocalDate toDate, boolean ignoreExistingTimeLogs) {
         try {
             if (isEmpty(settings.getDefaultJobId())) {
                 addLog("Cannot add time logs without a selected job");
@@ -195,7 +195,7 @@ public class Controller {
                     addLog("Found approved leaves within date range from " + fromDate + " to " + toDate);
                 }
                 // Fetch existing time logs for the specified period
-                Map<LocalDate, HoursToLog> existingTimeLogs = zohoService.getExistingTimeLogsForUser(token, fromDate, toDate);
+                Map<LocalDate, HoursToLog> existingTimeLogs = ignoreExistingTimeLogs ? Collections.emptyMap() : zohoService.getExistingTimeLogsForUser(token, fromDate, toDate);
                 if (!existingTimeLogs.isEmpty()) {
                     int numberOfDaysWithTimeLogs = existingTimeLogs.size();
                     addLog("Found existing time logs for " + numberOfDaysWithTimeLogs + " day" + (numberOfDaysWithTimeLogs == 1 ? "" : "s"));

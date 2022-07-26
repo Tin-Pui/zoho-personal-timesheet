@@ -78,6 +78,7 @@ public class DummyZohoService implements ZohoService {
 
     @Override
     public Map<LocalDate, HoursToLog> getExistingTimeLogsForUser(OAuthToken authToken, LocalDate fromDate, LocalDate toDate) throws ZohoException {
+        LOG.info("Fetching existing time logs");
         checkEmail(authToken);
         simulateResponseTime(100);
         return new HashMap<>();

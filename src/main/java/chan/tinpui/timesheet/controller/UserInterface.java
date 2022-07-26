@@ -14,6 +14,7 @@ import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
+import javafx.util.Duration;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
@@ -205,6 +206,17 @@ public class UserInterface extends VBox {
         DateRangeFormBox dateRangeFormBox = new DateRangeFormBox( LocalDate.now().with(TemporalAdjusters.firstDayOfMonth()), LocalDate.now().with(TemporalAdjusters.lastDayOfMonth()));
         addNode(dateRangeFormBox);
 
+        CheckBox ignoreExistingTimeLogsCheckBox = new CheckBox();
+        Label ignoreExistingTimeLogsLabel = new Label("Ignore existing time logs");
+        Tooltip ignoreExistingTimeLogsTooltip = new Tooltip("The number of hours for new time logs will be reduced based on existing time logs unless this option is enabled.");
+        ignoreExistingTimeLogsTooltip.setShowDelay(Duration.millis(500));
+        ignoreExistingTimeLogsTooltip.setShowDuration(Duration.seconds(10));
+        ignoreExistingTimeLogsLabel.setTooltip(ignoreExistingTimeLogsTooltip);
+        ignoreExistingTimeLogsLabel.setPadding(new Insets(0, 0, 2, 0));
+        ignoreExistingTimeLogsLabel.setGraphic(ignoreExistingTimeLogsCheckBox);
+        ignoreExistingTimeLogsLabel.setContentDisplay(ContentDisplay.RIGHT);
+        addNode(ignoreExistingTimeLogsLabel);
+
         addButton(createTimeLogsButton, createTimeLogsStatusLabel, (actionEvent) -> handleButtonClick(() -> {
             Platform.runLater(() -> createTimeLogsStatusLabel.setState(IN_PROGRESS));
             Map<String, String> leaveToJobMap = new HashMap<>();
@@ -225,7 +237,7 @@ public class UserInterface extends VBox {
                     dayHourFields.get(5).getValue(),
                     dayHourFields.get(6).getValue(),
                     dayHourFields.get(7).getValue());
-            boolean success = controller.addTimeLogs(userEmailField.getText(), dateRangeFormBox.selectedFromDate(), dateRangeFormBox.selectedToDate());
+            boolean success = controller.addTimeLogs(userEmailField.getText(), dateRangeFormBox.selectedFromDate(), dateRangeFormBox.selectedToDate(), ignoreExistingTimeLogsCheckBox.isSelected());
             Platform.runLater(() -> createTimeLogsStatusLabel.setState(success ? FINISHED_OK : FINISHED_NOT_OK));
         }, updateJobListButton, createTimeLogsButton));
 
