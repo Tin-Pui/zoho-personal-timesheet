@@ -1,6 +1,5 @@
 package chan.tinpui.timesheet.zoho;
 
-import chan.tinpui.timesheet.exception.InvalidAuthTokenZohoException;
 import chan.tinpui.timesheet.exception.ZohoException;
 import chan.tinpui.timesheet.zoho.domain.*;
 import com.zoho.api.authenticator.OAuthToken;
@@ -28,10 +27,9 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 
-public class PeopleZohoService implements ZohoService {
+public class PeopleZohoService extends AbstractZohoService {
 
     private static final Logger LOG = LoggerFactory.getLogger(PeopleZohoService.class);
-    private static final int INVALID_AUTH_ERROR_CODE = 7202;
     private static final String ACCESS_TOKEN_URL = "/oauth/v2/token";
     private static final String LOCAL_DATE_FORMAT_PATTERN = "yyyy-MM-dd";
     private static final DateTimeFormatter LOCAL_DATE_FORMATTER = DateTimeFormatter.ofPattern(LOCAL_DATE_FORMAT_PATTERN);
@@ -59,48 +57,6 @@ public class PeopleZohoService implements ZohoService {
             return response;
         } else {
             throw new ZohoException("Zoho response did not have a body");
-        }
-    }
-
-    private JSONObject getRequest(String url, OAuthToken authToken) throws ZohoException {
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("Authorization", "Zoho-oauthtoken " + authToken.getAccessToken());
-        HttpEntity<Void> request = new HttpEntity<>(headers);
-        LOG.info("GET: " + url);
-        ResponseEntity<String> responseEntity = restTemplate.exchange(url, HttpMethod.GET, request, String.class);
-        if (responseEntity.hasBody()) {
-            LOG.info(responseEntity.getBody());
-            return new JSONObject(responseEntity.getBody());
-        } else {
-            throw new ZohoException("Zoho response did not have a body");
-        }
-    }
-
-    private JSONArray extractResultFrom(JSONObject response) throws ZohoException {
-        JSONObject responseBody = response.getJSONObject("response");
-        if (responseBody.has("errors")) {
-            JSONArray optArrayErrors = responseBody.optJSONArray("errors");
-            if (optArrayErrors != null) {
-                for (Object object : optArrayErrors) {
-                    if (object instanceof JSONObject) {
-                        JSONObject error = (JSONObject) object;
-                        if (error.optInt("code") == 7202) {
-                            throw new InvalidAuthTokenZohoException(error.getString("message"));
-                        }
-                    }
-                }
-            } else {
-                JSONObject optObjectErrors = responseBody.optJSONObject("errors");
-                if (optObjectErrors != null) {
-                    if (optObjectErrors.optInt("code") == INVALID_AUTH_ERROR_CODE) {
-                        throw new InvalidAuthTokenZohoException(optObjectErrors.getString("message"));
-                    }
-                    throw new ZohoException(optObjectErrors.getString("message"));
-                }
-            }
-            throw new ZohoException(responseBody.getString("message"));
-        } else {
-            return responseBody.getJSONArray("result");
         }
     }
 
@@ -240,7 +196,7 @@ public class PeopleZohoService implements ZohoService {
                 "&from=" + fromDate.format(LOCAL_DATE_FORMATTER) +
                 "&to=" + toDate.format(LOCAL_DATE_FORMATTER) +
                 "&dateFormat=" + LOCAL_DATE_FORMAT_PATTERN;
-        JSONArray response = getRequest(url, authToken).getJSONArray("data");
+        JSONArray response = new JSONObject(getRequest(url, authToken)).getJSONArray("data");
         Set<LocalDate> holidays = new HashSet<>();
         response.forEach(object -> {
             JSONObject holiday = (JSONObject) object;
