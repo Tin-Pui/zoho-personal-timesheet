@@ -65,9 +65,9 @@ public class Settings {
         return leaveToJobMap;
     }
 
-    public Map<Record, Record> getLeaveToJobMap(Map<String, Record> fetchedLeaveTypes, Map<String, Record> fetchedJobs) {
+    public Map<ZohoRecord, ZohoRecord> getLeaveToJobMap(Map<String, ZohoRecord> fetchedLeaveTypes, Map<String, ZohoRecord> fetchedJobs) {
         JSONObject jsonMap = jsonObject.getJSONObject("leaveToJobMap");
-        Map<Record, Record> leaveToJobMap = new HashMap<>();
+        Map<ZohoRecord, ZohoRecord> leaveToJobMap = new HashMap<>();
         for (Map.Entry<String, Object> entry : jsonMap.toMap().entrySet()) {
             leaveToJobMap.put(fetchedLeaveTypes.get(entry.getKey()), fetchedJobs.get(entry.getValue().toString()));
         }

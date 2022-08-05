@@ -38,28 +38,28 @@ public class DummyZohoService implements ZohoService {
     }
 
     @Override
-    public List<Record> getJobsForUser(OAuthToken authToken) throws ZohoException {
+    public List<ZohoRecord> getJobsForUser(OAuthToken authToken) throws ZohoException {
         checkEmail(authToken);
         simulateResponseTime(500);
-        List<Record> jobs = new ArrayList<>();
-        jobs.add(new Record("100001", "Internal Annual Leave"));
-        jobs.add(new Record("100002", "Other Leave"));
-        jobs.add(new Record("100003", "Public/Bank Holiday"));
-        jobs.add(new Record("100004", "Day Client Work"));
-        jobs.add(new Record("100005", "Night Client Work"));
-        jobs.add(new Record("100006", "Weekend Client Work"));
+        List<ZohoRecord> jobs = new ArrayList<>();
+        jobs.add(new ZohoRecord("100001", "Internal Annual Leave"));
+        jobs.add(new ZohoRecord("100002", "Other Leave"));
+        jobs.add(new ZohoRecord("100003", "Public/Bank Holiday"));
+        jobs.add(new ZohoRecord("100004", "Day Client Work"));
+        jobs.add(new ZohoRecord("100005", "Night Client Work"));
+        jobs.add(new ZohoRecord("100006", "Weekend Client Work"));
         return jobs;
     }
 
     @Override
-    public List<Record> getLeaveTypesForUser(OAuthToken authToken) throws ZohoException {
+    public List<ZohoRecord> getLeaveTypesForUser(OAuthToken authToken) throws ZohoException {
         checkEmail(authToken);
         simulateResponseTime(500);
-        List<Record> leaveTypes = new ArrayList<>();
-        leaveTypes.add(new Record("200001", "Sick Day"));
-        leaveTypes.add(new Record("200002", "Annual Leave"));
-        leaveTypes.add(new Record("200003", "Compensatory Off"));
-        leaveTypes.add(new Record("200004", "Other Leave"));
+        List<ZohoRecord> leaveTypes = new ArrayList<>();
+        leaveTypes.add(new ZohoRecord("200001", "Sick Day"));
+        leaveTypes.add(new ZohoRecord("200002", "Annual Leave"));
+        leaveTypes.add(new ZohoRecord("200003", "Compensatory Off"));
+        leaveTypes.add(new ZohoRecord("200004", "Other Leave"));
         return leaveTypes;
     }
 
@@ -69,9 +69,9 @@ public class DummyZohoService implements ZohoService {
         simulateResponseTime(100);
         Map<LocalDate, HoursToLog> approvedLeavesForUser = new HashMap<>();
         LocalDate localDate = fromDate.withDayOfMonth(15).with(TemporalAdjusters.nextOrSame(DayOfWeek.MONDAY));
-        Record leaveType = new Record("200002", "Annual Leave");
+        ZohoRecord leaveType = new ZohoRecord("200002", "Annual Leave");
         int hoursInDay = settings.getHoursForDay(localDate.getDayOfWeek());
-        approvedLeavesForUser.computeIfAbsent(localDate, d -> new WorkdayHoursToLog(new Record("", ""), 0))
+        approvedLeavesForUser.computeIfAbsent(localDate, d -> new WorkdayHoursToLog(new ZohoRecord("", ""), 0))
                 .addLeaveJobHoursToLog(leaveType, hoursInDay);
         return approvedLeavesForUser;
     }

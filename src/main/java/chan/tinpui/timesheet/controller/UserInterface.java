@@ -1,6 +1,6 @@
 package chan.tinpui.timesheet.controller;
 
-import chan.tinpui.timesheet.zoho.domain.Record;
+import chan.tinpui.timesheet.zoho.domain.ZohoRecord;
 import chan.tinpui.timesheet.zoho.domain.Settings;
 import com.zoho.api.authenticator.OAuthToken;
 import javafx.application.Platform;
@@ -42,11 +42,11 @@ public class UserInterface extends VBox {
     private TextField userEmailField;
     private StatusLabel updateJobsStatusLabel;
     private Label accessTokenLabel;
-    private ComboBox<Record> selectedJobDropdown;
-    private ComboBox<Record> holidayJobDropdown;
+    private ComboBox<ZohoRecord> selectedJobDropdown;
+    private ComboBox<ZohoRecord> holidayJobDropdown;
     private Map<Integer, Spinner<Integer>> dayHourFields;
     private FormGridPane leaveMapForm;
-    private Map<Record, ComboBox<Record>> leaveMapControls;
+    private Map<ZohoRecord, ComboBox<ZohoRecord>> leaveMapControls;
     private TextArea infoDisplayArea;
 
     public UserInterface(Node loadingScreen) {
@@ -121,9 +121,9 @@ public class UserInterface extends VBox {
         if (controller.isTokenActive()) {
             OAuthToken token = controller.getToken();
             Settings settings = controller.getSettings();
-            List<Record> jobs = controller.findJobs(token.getUserMail(), true);
-            List<Record> holidayJobOptions = new ArrayList<>();
-            holidayJobOptions.add(new Record(Record.IGNORE_RECORD_ID, "{ No selection: Omit time logs for public/bank holidays }"));
+            List<ZohoRecord> jobs = controller.findJobs(token.getUserMail(), true);
+            List<ZohoRecord> holidayJobOptions = new ArrayList<>();
+            holidayJobOptions.add(new ZohoRecord(ZohoRecord.IGNORE_RECORD_ID, "{ No selection: Omit time logs for public/bank holidays }"));
             holidayJobOptions.addAll(jobs);
             Platform.runLater(() -> {
                 updateJobDropdown(selectedJobDropdown, jobs, settings.getDefaultJobId());
@@ -136,29 +136,29 @@ public class UserInterface extends VBox {
         }
     }
 
-    private void populateLeaveMapForm(Map<String, String> leaveToJobMap, List<Record> leaveTypes, List<Record> jobs) {
+    private void populateLeaveMapForm(Map<String, String> leaveToJobMap, List<ZohoRecord> leaveTypes, List<ZohoRecord> jobs) {
         leaveMapForm.removeAllFormFields();
         leaveMapControls.clear();
-        List<Record> selectOptions = new ArrayList<>();
-        selectOptions.add(new Record(Record.IGNORE_RECORD_ID, "{ No selection: Omit time logs for this leave type }"));
+        List<ZohoRecord> selectOptions = new ArrayList<>();
+        selectOptions.add(new ZohoRecord(ZohoRecord.IGNORE_RECORD_ID, "{ No selection: Omit time logs for this leave type }"));
         selectOptions.addAll(jobs);
-        for (Record leaveType : leaveTypes) {
-            ComboBox<Record> jobDropdown = new ComboBox<>();
+        for (ZohoRecord leaveType : leaveTypes) {
+            ComboBox<ZohoRecord> jobDropdown = new ComboBox<>();
             jobDropdown.setMaxWidth(Double.MAX_VALUE);
-            updateJobDropdown(jobDropdown, selectOptions, leaveToJobMap.getOrDefault(leaveType.getId(), Record.IGNORE_RECORD_ID));
+            updateJobDropdown(jobDropdown, selectOptions, leaveToJobMap.getOrDefault(leaveType.getId(), ZohoRecord.IGNORE_RECORD_ID));
             leaveMapForm.addFormField(leaveType.getDescription(), jobDropdown);
             leaveMapControls.put(leaveType, jobDropdown);
         }
     }
 
-    private void updateJobDropdown(ComboBox<Record> jobDropdown, List<Record> jobs, String defaultJobId) {
-        ObservableList<Record> observableList = FXCollections.observableArrayList(jobs);
+    private void updateJobDropdown(ComboBox<ZohoRecord> jobDropdown, List<ZohoRecord> jobs, String defaultJobId) {
+        ObservableList<ZohoRecord> observableList = FXCollections.observableArrayList(jobs);
         jobDropdown.setItems(observableList);
         if (!observableList.isEmpty()) {
             int defaultSelectedIndex = 0;
             if (defaultJobId != null) {
                 int index = 0;
-                for (Record job : observableList) {
+                for (ZohoRecord job : observableList) {
                     if (defaultJobId.equals(job.getId())) {
                         defaultSelectedIndex = index;
                         break;
@@ -220,9 +220,9 @@ public class UserInterface extends VBox {
         addButton(createTimeLogsButton, createTimeLogsStatusLabel, (actionEvent) -> handleButtonClick(() -> {
             Platform.runLater(() -> createTimeLogsStatusLabel.setState(IN_PROGRESS));
             Map<String, String> leaveToJobMap = new HashMap<>();
-            for (Map.Entry<Record, ComboBox<Record>> leaveJobEntry : leaveMapControls.entrySet()) {
-                ComboBox<Record> leaveJobSelection = leaveJobEntry.getValue();
-                if (leaveJobSelection.getValue() != null && !leaveJobSelection.getValue().getId().equals(Record.IGNORE_RECORD_ID)) {
+            for (Map.Entry<ZohoRecord, ComboBox<ZohoRecord>> leaveJobEntry : leaveMapControls.entrySet()) {
+                ComboBox<ZohoRecord> leaveJobSelection = leaveJobEntry.getValue();
+                if (leaveJobSelection.getValue() != null && !leaveJobSelection.getValue().getId().equals(ZohoRecord.IGNORE_RECORD_ID)) {
                     leaveToJobMap.put(leaveJobEntry.getKey().getId(), leaveJobSelection.getValue().getId());
                 }
             }

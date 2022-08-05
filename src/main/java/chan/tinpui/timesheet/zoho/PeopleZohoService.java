@@ -103,27 +103,27 @@ public class PeopleZohoService extends AbstractZohoService {
     }
 
     @Override
-    public List<Record> getJobsForUser(OAuthToken authToken) throws ZohoException {
+    public List<ZohoRecord> getJobsForUser(OAuthToken authToken) throws ZohoException {
         String url = "https://people.zoho.com/people/api/timetracker/getjobs?assignedTo=" + authToken.getUserMail();
         JSONArray response = extractResultFrom(getRequest(url, authToken));
-        Set<Record> jobs = new TreeSet<>(Comparator.comparing((Record::toString)));
+        Set<ZohoRecord> jobs = new TreeSet<>(Comparator.comparing((ZohoRecord::toString)));
         response.forEach(object -> {
             JSONObject job = (JSONObject) object;
             if (job.has("jobId") && job.has("clientName") && job.has("projectName") && job.has("jobName")) {
-                jobs.add(new Record(job.getString("jobId"), job.getString("clientName") + "; " + job.getString("projectName") + "; " + job.getString("jobName")));
+                jobs.add(new ZohoRecord(job.getString("jobId"), job.getString("clientName") + "; " + job.getString("projectName") + "; " + job.getString("jobName")));
             }
         });
         return new ArrayList<>(jobs);
     }
 
     @Override
-    public List<Record> getLeaveTypesForUser(OAuthToken authToken) throws ZohoException {
+    public List<ZohoRecord> getLeaveTypesForUser(OAuthToken authToken) throws ZohoException {
         String url = "https://people.zoho.com/people/api/leave/getLeaveTypeDetails?userId=" + authToken.getUserMail();
         JSONArray response = extractResultFrom(getRequest(url, authToken));
-        List<Record> leaveTypes = new ArrayList<>();
+        List<ZohoRecord> leaveTypes = new ArrayList<>();
         response.forEach(object -> {
             JSONObject leaveType = (JSONObject) object;
-            leaveTypes.add(new Record(leaveType.getString("Id"), leaveType.getString("Name")));
+            leaveTypes.add(new ZohoRecord(leaveType.getString("Id"), leaveType.getString("Name")));
         });
         return leaveTypes;
     }
@@ -155,14 +155,14 @@ public class PeopleZohoService extends AbstractZohoService {
             JSONArray leaveFormResults = extractResultFrom(getRequest(leaveFormUrl, authToken));
             leaveFormResults.forEach(result -> {
                 JSONObject jsonObject = (JSONObject) result;
-                Record leaveType = new Record(jsonObject.getString("Leavetype.ID"), jsonObject.getString("Leavetype"));
+                ZohoRecord leaveType = new ZohoRecord(jsonObject.getString("Leavetype.ID"), jsonObject.getString("Leavetype"));
                 JSONObject dayDetails = jsonObject.getJSONObject("DayDetails");
                 dayDetails.keys().forEachRemaining(date -> {
                     double leaveCount = Double.parseDouble(dayDetails.getJSONObject(date).getString("LeaveCount"));
                     LocalDate localDate = LocalDate.parse(date, LEAVE_FORM_DATE_FORMATTER);
                     LOG.info("Found approved leave for " + localDate + " with count " + leaveCount);
                     int hoursInDay = settings.getHoursForDay(localDate.getDayOfWeek());
-                    approvedLeavesForUser.computeIfAbsent(localDate, d -> new WorkdayHoursToLog(new Record("", ""), 0))
+                    approvedLeavesForUser.computeIfAbsent(localDate, d -> new WorkdayHoursToLog(new ZohoRecord("", ""), 0))
                             .addLeaveJobHoursToLog(leaveType, hoursInDay * leaveCount);
                 });
             });
@@ -182,8 +182,8 @@ public class PeopleZohoService extends AbstractZohoService {
             JSONObject timeLog = (JSONObject) result;
             double hours = timeLog.getInt("hoursInMins") / 60.0;
             LocalDate workDate = LocalDate.parse(timeLog.getString("workDate"), LOCAL_DATE_FORMATTER);
-            Record timeLogJob = new Record(timeLog.getString("jobId"), timeLog.getString("projectName") + "; " + timeLog.getString("jobName"));
-            existingTimeLogsForUser.computeIfAbsent(workDate, localDate -> new WorkdayHoursToLog(new Record("", ""), 0))
+            ZohoRecord timeLogJob = new ZohoRecord(timeLog.getString("jobId"), timeLog.getString("projectName") + "; " + timeLog.getString("jobName"));
+            existingTimeLogsForUser.computeIfAbsent(workDate, localDate -> new WorkdayHoursToLog(new ZohoRecord("", ""), 0))
                     .addLeaveJobHoursToLog(timeLogJob, hours);
         });
         return existingTimeLogsForUser;

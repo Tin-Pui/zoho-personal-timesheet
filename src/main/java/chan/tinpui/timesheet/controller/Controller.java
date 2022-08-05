@@ -29,8 +29,8 @@ public class Controller {
     private final TokenService tokenService;
     private final SettingsService settingsService;
     private final ZohoService zohoService;
-    private final Map<String, Record> fetchedJobs;
-    private final Map<String, Record> fetchedLeaveTypes;
+    private final Map<String, ZohoRecord> fetchedJobs;
+    private final Map<String, ZohoRecord> fetchedLeaveTypes;
     private final List<String> logs;
     private final List<Consumer<String>> logListeners;
     private final List<Consumer<String>> accessTokenListeners;
@@ -201,7 +201,7 @@ public class Controller {
                     addLog("Found existing time logs for " + numberOfDaysWithTimeLogs + " day" + (numberOfDaysWithTimeLogs == 1 ? "" : "s"));
                 }
 
-                Map<Record, Record> leaveToJobMap = settings.getLeaveToJobMap(fetchedLeaveTypes, fetchedJobs);
+                Map<ZohoRecord, ZohoRecord> leaveToJobMap = settings.getLeaveToJobMap(fetchedLeaveTypes, fetchedJobs);
                 for (LocalDate dateToAddTimeLogsFor : fromDate.datesUntil(toDate.plusDays(1)).collect(Collectors.toList())) {
                     // For each date in the specified period, find hours to log from settings
                     int hoursForDay = settings.getHoursForDay(dateToAddTimeLogsFor.getDayOfWeek());
@@ -217,7 +217,7 @@ public class Controller {
                         timeLogsForDay.reduceHoursToLog(existingTimeLogs.get(dateToAddTimeLogsFor));
                     }
                     // Add new time log for hours remaining, do not log if time remaining is 0 or less.
-                    for (Map.Entry<Record, Double> timeLogToAdd : timeLogsForDay.getJobIdToHours().entrySet()) {
+                    for (Map.Entry<ZohoRecord, Double> timeLogToAdd : timeLogsForDay.getJobIdToHours().entrySet()) {
                         Double hours = roundTo2DecimalPlaces(timeLogToAdd.getValue());
                         if (hours != 0) {
                             addLog("Adding time log for " + dateToAddTimeLogsFor + " with " + hours.toString() + " hours on " + timeLogToAdd.getKey());
@@ -252,11 +252,11 @@ public class Controller {
         }
     }
 
-    public List<Record> findJobs(String userEmail, boolean refreshToken) {
+    public List<ZohoRecord> findJobs(String userEmail, boolean refreshToken) {
         try {
             fetchedJobs.clear();
             token.setUserMail(userEmail);
-            List<Record> jobs = zohoService.getJobsForUser(token);
+            List<ZohoRecord> jobs = zohoService.getJobsForUser(token);
             jobs.forEach(job -> {
                 fetchedJobs.put(job.getId(), job);
             });
@@ -278,11 +278,11 @@ public class Controller {
         }
     }
 
-    public List<Record> findLeaveTypes(String userEmail, boolean refreshToken) {
+    public List<ZohoRecord> findLeaveTypes(String userEmail, boolean refreshToken) {
         try {
             fetchedLeaveTypes.clear();
             token.setUserMail(userEmail);
-            List<Record> leaveTypes = zohoService.getLeaveTypesForUser(token);
+            List<ZohoRecord> leaveTypes = zohoService.getLeaveTypesForUser(token);
             leaveTypes.forEach(leaveType -> {
                 fetchedLeaveTypes.put(leaveType.getId(), leaveType);
             });

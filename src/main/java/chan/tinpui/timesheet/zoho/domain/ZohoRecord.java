@@ -2,12 +2,12 @@ package chan.tinpui.timesheet.zoho.domain;
 
 import java.util.Objects;
 
-public class Record {
+public class ZohoRecord {
     public static final String IGNORE_RECORD_ID = "";
     private String id;
     private String description;
 
-    public Record(String id, String description) {
+    public ZohoRecord(String id, String description) {
         this.id = id;
         this.description = description;
     }
@@ -29,8 +29,8 @@ public class Record {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        Record record = (Record) o;
-        return Objects.equals(id, record.id);
+        ZohoRecord zohoRecord = (ZohoRecord) o;
+        return Objects.equals(id, zohoRecord.id);
     }
 
     @Override

@@ -7,19 +7,19 @@ import static org.apache.commons.lang3.StringUtils.isEmpty;
 
 public class WorkdayHoursToLog implements HoursToLog {
 
-    private Record mainJobId;
+    private ZohoRecord mainJobId;
     private double jobHours;
-    private Map<Record, Double> leaveJobToHours;
+    private Map<ZohoRecord, Double> leaveJobToHours;
 
-    public WorkdayHoursToLog(Record mainJobId, double totalHours) {
+    public WorkdayHoursToLog(ZohoRecord mainJobId, double totalHours) {
         this.mainJobId = mainJobId;
         this.jobHours = totalHours;
         this.leaveJobToHours = new HashMap<>();
     }
 
     @Override
-    public Map<Record, Double> getJobIdToHours() {
-        Map<Record, Double> jobIdToHours = new HashMap<>();
+    public Map<ZohoRecord, Double> getJobIdToHours() {
+        Map<ZohoRecord, Double> jobIdToHours = new HashMap<>();
         if (mainJobId != null && !isEmpty(mainJobId.getId()) && jobHours > 0) {
             jobIdToHours.put(mainJobId, jobHours);
         }
@@ -28,7 +28,7 @@ public class WorkdayHoursToLog implements HoursToLog {
     }
 
     @Override
-    public void addLeaveJobHoursToLog(Record leaveJobId, double hoursToAdd) {
+    public void addLeaveJobHoursToLog(ZohoRecord leaveJobId, double hoursToAdd) {
         if (!mainJobId.equals(leaveJobId)) {
             leaveJobToHours.merge(leaveJobId, hoursToAdd, Double::sum);
             jobHours -= hoursToAdd;
@@ -36,7 +36,7 @@ public class WorkdayHoursToLog implements HoursToLog {
     }
 
     @Override
-    public void reduceHoursToLog(Record jobId, double hoursToReduce) {
+    public void reduceHoursToLog(ZohoRecord jobId, double hoursToReduce) {
         if (jobId != null && leaveJobToHours.containsKey(jobId) && !mainJobId.equals(jobId)) {
             double hoursRemainingToLog = leaveJobToHours.get(jobId);
             if (hoursToReduce >= hoursRemainingToLog) {
