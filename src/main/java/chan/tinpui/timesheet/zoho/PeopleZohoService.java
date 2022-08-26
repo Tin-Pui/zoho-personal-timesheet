@@ -33,7 +33,7 @@ public class PeopleZohoService extends AbstractZohoService {
     private static final String ACCESS_TOKEN_URL = "/oauth/v2/token";
     private static final String LOCAL_DATE_FORMAT_PATTERN = "yyyy-MM-dd";
     private static final DateTimeFormatter LOCAL_DATE_FORMATTER = DateTimeFormatter.ofPattern(LOCAL_DATE_FORMAT_PATTERN);
-    private static final DateTimeFormatter LEAVE_FORM_DATE_FORMATTER = DateTimeFormatter.ofPattern("dd-LLL-yyyy");
+    private static final DateTimeFormatter LEAVE_FORM_DATE_FORMATTER = DateTimeFormatter.ofPattern("dd-LLL-yyyy", Locale.ENGLISH);
 
     private final RestTemplate restTemplate;
 
