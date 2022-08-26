@@ -2,9 +2,9 @@ package chan.tinpui.timesheet.zoho;
 
 import chan.tinpui.timesheet.exception.ZohoException;
 import chan.tinpui.timesheet.zoho.domain.HoursToLog;
-import chan.tinpui.timesheet.zoho.domain.ZohoRecord;
 import chan.tinpui.timesheet.zoho.domain.Settings;
 import chan.tinpui.timesheet.zoho.domain.ZohoDomain;
+import chan.tinpui.timesheet.zoho.domain.ZohoRecord;
 import com.zoho.api.authenticator.OAuthToken;
 
 import java.time.LocalDate;

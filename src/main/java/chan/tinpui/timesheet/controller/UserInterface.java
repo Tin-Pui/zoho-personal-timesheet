@@ -1,7 +1,7 @@
 package chan.tinpui.timesheet.controller;
 
-import chan.tinpui.timesheet.zoho.domain.ZohoRecord;
 import chan.tinpui.timesheet.zoho.domain.Settings;
+import chan.tinpui.timesheet.zoho.domain.ZohoRecord;
 import com.zoho.api.authenticator.OAuthToken;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;

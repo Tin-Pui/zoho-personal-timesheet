@@ -230,7 +230,7 @@ public class Controller {
             }
         } catch (Exception e) {
             // TODO : What to do when catching InvalidAuthTokenZohoException
-            e.printStackTrace();
+            LOG.error("Error occurred while adding time logs", e);
             addLog("Error occurred");
             return false;
         }
@@ -272,7 +272,7 @@ public class Controller {
                 return new ArrayList<>();
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            LOG.error("Error occurred while finding jobs", e);
             addLog("Failed to find jobs for " + userEmail + " (" + e.getMessage() + ")");
             return new ArrayList<>();
         }
@@ -298,7 +298,7 @@ public class Controller {
                 return new ArrayList<>();
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            LOG.error("Error occurred while finding leave types", e);
             addLog("Failed to find leave types for " + userEmail + " (" + e.getMessage() + ")");
             return new ArrayList<>();
         }
